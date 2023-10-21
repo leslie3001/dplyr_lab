@@ -1,0 +1,118 @@
+---
+title: "Lab dplyr"
+author: "Leslie HUYNH"
+format: html
+---
+
+```{r echo=FALSE, message=FALSE}
+library(here)
+i_am("final_dplyr.qmd")
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+```
+### Exercise 1
+```{r echo=FALSE, message=FALSE}
+spotify<- readRDS("top-spotify-songs-from-20102019-by-year.Rds")
+```
+
+
+```{r echo=FALSE, message=FALSE}
+song_spotify <- spotify %>% distinct(title, .keep_all = TRUE)
+artist_spotify <- spotify %>% distinct(artist, .keep_all = TRUE)
+genre_spotify <- spotify %>% distinct(`top genre`, .keep_all = TRUE)
+sum_song <- nrow(song_spotify)
+sum_artist <- nrow(artist_spotify)
+sum_genre <- nrow(genre_spotify)
+```
+The data set contains `r sum_song` songs, `r sum_artist` artists and `r sum_genre` genres.
+
+
+```{r echo=FALSE, message=FALSE}
+song_year_spotify <-song_spotify %>% group_by(year) %>% summarise(nb_song=n())
+knitr::kable(song_year_spotify)
+```
+This table shows the number of top spotify songs per year. 
+
+```{r echo=FALSE, message=FALSE}
+artistandsong <- spotify %>% distinct(artist, title)
+pop_artist <- artistandsong %>% group_by(artist) %>% summarise(songsartist=n())
+summarise(pop_artist, songattop=max(songsartist))
+mostpop <- pop_artist %>% slice_max(order_by = songsartist)
+```
+The most popular artist is `r mostpop[1]` with `r mostpop[2]` songs. 
+
+
+The next table displays some statistics on the bpm of top genre and the number of songs in each genre.
+```{r echo=FALSE, message=FALSE}
+statsgenre <- song_spotify %>% group_by(`top genre`) %>% 
+  summarise(
+    mintempo=min(bpm),
+    maxtempo=max(bpm),
+    medtempo=median(bpm),
+    meantempo=mean(bpm),
+    nbsong=n_distinct(title))
+knitr::kable(statsgenre)
+```
+
+```{r echo=FALSE, message=FALSE}
+statsyear <-song_spotify |> group_by(year) |>
+  summarise(medenergy=median(nrgy),
+            meddance=median(dnce))
+```
+
+
+```{r echo=FALSE, message=FALSE}
+ggplot() + 
+  geom_point(data = statsyear, aes(x = year, y = meddance), color = "blue") +
+  geom_point(data = statsyear, aes(x = year, y = medenergy), color = "red") +
+  geom_line(data = statsyear, aes(x = year, y = meddance), color = "blue") +
+  geom_line(data = statsyear, aes(x = year, y = medenergy), color = "red") +
+  scale_x_continuous(breaks = seq(min(statsyear$year), max(statsyear$year), by = 2)) +
+  scale_color_manual(values = c("Dance" = "blue", "Energy" = "red")) +
+  labs(color = "Energy and danceability")+
+  ylab("danceability and energy")
+
+```
+This graph shows how danceability and energy of songs evolve each year.
+
+
+### Exercice 2
+```{r echo=FALSE, message=FALSE}
+dropout<-readRDS("dropout.Rds")
+```
+
+```{r echo=FALSE, message=FALSE}
+age_stats <- dropout %>%
+  group_by(Gender, `Marital status`) %>%
+  summarize(med_age = median(`Age at enrollment`), .groups = "drop")
+
+```
+
+```{r echo=FALSE, message=FALSE}
+age_stats2 <- age_stats %>%
+  pivot_wider(values_from = med_age, names_from = Gender)
+knitr::kable(age_stats2)
+```
+This table illustrates the marital status and the mean of age at enrollment of people from the data set.
+
+```{r echo=FALSE, message=FALSE}
+means_CU <- dropout %>% distinct(`Curricular units 1st sem (credited)`,`Curricular units 1st sem (enrolled)`, `Curricular units 1st sem (evaluations)`, `Curricular units 1st sem (approved)`, `Curricular units 1st sem (grade)`, `Curricular units 1st sem (without evaluations)`, `Curricular units 2nd sem (credited)`, `Curricular units 2nd sem (enrolled)`, `Curricular units 2nd sem (evaluations)`, `Curricular units 2nd sem (approved)`, `Curricular units 2nd sem (grade)`, `Curricular units 2nd sem (without evaluations)`, Target)
+
+means_CU %>% group_by(Target) %>%
+  summarise(
+    mean_CU_1st_sem_credited = mean(`Curricular units 1st sem (credited)`),
+    mean_CU_1st_sem_enrolled = mean(`Curricular units 1st sem (enrolled)`),
+    mean_CU_1st_sem_evaluations = mean(`Curricular units 1st sem (evaluations)`),
+    mean_CU_1st_sem_approved = mean(`Curricular units 1st sem (approved)`),
+    mean_CU_1st_sem_grade = mean(`Curricular units 1st sem (grade)`),
+    mean_CU_1st_sem_without_evaluations = mean(`Curricular units 1st sem (without evaluations)`),
+    mean_CU_2nd_sem_credited = mean(`Curricular units 2nd sem (credited)`),
+    mean_CU_2nd_sem_enrolled = mean(`Curricular units 2nd sem (enrolled)`),
+    mean_CU_2nd_sem_evaluations = mean(`Curricular units 2nd sem (evaluations)`),
+    mean_CU_2nd_sem_approved = mean(`Curricular units 2nd sem (approved)`),
+    mean_CU_2nd_sem_grade = mean(`Curricular units 2nd sem (grade)`),
+    mean_CU_2nd_sem_without_evaluations = mean(`Curricular units 2nd sem (without evaluations)`)
+  )
+```
+This table gives us the mean of the grade depending on graduated, dropout or enrolled people.
